@@ -56,7 +56,7 @@ interview.io-clone/
 ### Steps to Run the Project  
 #### 1. Clone the repository:  
 ```sh
-git clone https://github.com/your-username/interview.io-clone.git
+git clone https://github.com/ShobhitKori/interview.io-clone.git
 cd interview.io-clone
 ```
 
@@ -94,10 +94,3 @@ Feel free to contribute to the project by submitting issues or pull requests. Fo
 3. Commit your changes (`git commit -m 'Add new feature'`)<br>
 4. Push to the branch (`git push origin feature-name`)<br>
 5. Open a pull request<br>
-
-## License  
-This project is licensed under the MIT License.<br>
-
----  
-For any questions or discussions, feel free to open an issue or reach out. 🚀
-
