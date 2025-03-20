@@ -19,6 +19,10 @@ const CandidateReportSchema = new mongoose.Schema({
   candidate: {
     name: String,
     email: String,
+  },
+  interviewer: {
+    name: String,
+    email: String,
   }
 })
 

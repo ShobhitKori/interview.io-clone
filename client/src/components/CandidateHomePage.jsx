@@ -9,6 +9,8 @@ import {
   ChevronDown,
   LogOut,
 } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function CandidateDashboard() {
   const [activeTab, setActiveTab] = useState("my-interviews");
@@ -31,12 +33,49 @@ export default function CandidateDashboard() {
   const blogPosts = [
     {
       id: 1,
-      title: "What is full-stack Development",
+      title: "What is Full-Stack Development?",
       description:
-        "Explore Full Stack Development: Covering Design, Creation, Testing, and Deployment of Web Applications, Including Databases, Front-End & Back-End Development.",
-      image: "/placeholder.svg?height=200&width=300",
+        "Explore Full-Stack Development: Covering Design, Creation, Testing, and Deployment of Web Applications, Including Databases, Front-End & Back-End Development.",
+      image:
+        "https://leadproinfotech.com/wp-content/uploads/2025/01/mern-stack.png",
+      readMore: "https://leadproinfotech.com/mern-stack-introduction-examples/",
     },
-    // Add more blog posts here
+    {
+      id: 2,
+      title: "Getting Started with React Hooks",
+      description:
+        "Learn how to leverage React Hooks to write cleaner and more efficient functional components. Dive into useState, useEffect, and useContext.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png",
+      readMore: "https://www.example.com/react-hooks-guide",
+    },
+    {
+      id: 3,
+      title: "Introduction to Python for Data Science",
+      description:
+        "Explore the fundamentals of Python for data science. Learn to manipulate data with Pandas and visualize data with Matplotlib.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1869px-Python-logo-notext.svg.png",
+      readMore: "https://www.example.com/python-data-science",
+    },
+    {
+      id: 4,
+      title: "Introduction to TypeScript",
+      description:
+        "Discover TypeScript, a statically typed superset of JavaScript. Learn about its benefits and how it can improve your development workflow.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Typescript_logo_2020.svg/2048px-Typescript_logo_2020.svg.png",
+      readMore: "https://www.example.com/typescript-intro",
+    },
+    {
+      id: 5,
+      title: "Building Mobile Apps with React Native",
+      description:
+        "Explore React Native for building cross-platform mobile applications. Learn to create native-like apps using React.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png",
+      readMore: "https://www.example.com/react-native-apps",
+    },
   ];
 
   const interviewQuestions = [
@@ -45,15 +84,19 @@ export default function CandidateDashboard() {
       title: "Advanced Swift Interview Questions",
       description:
         "Essential Swift interview questions to effectively assess experienced candidates.",
-      image: "/placeholder.svg?height=200&width=300",
+      image:
+        "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.almabetter.com%2Fbytes%2Farticles%2Fmern-stack&psig=AOvVaw0Cxut1UVss3_aZzTFAiiv6&ust=1742557289116000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPCGuvrJmIwDFQAAAAAdAAAAABAE",
     },
     // Add more questions here
   ];
 
   const logOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/");
+    toast.success("Logged out");
+    setTimeout(() => {
+      navigate("/");
+      localStorage.removeItem("token");
+      localStorage.removeItem("candidate");
+    }, 2000);
   };
 
   useEffect(() => {
@@ -69,7 +112,7 @@ export default function CandidateDashboard() {
     };
   }, [dropdownRef]);
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("candidate"));
   const candidateDetails = {
     name: user.name,
     email: user.email,
@@ -140,10 +183,10 @@ export default function CandidateDashboard() {
                 </button>
               </div>
             )}
+            <ToastContainer />
           </div>
         </div>
       </header>
-
       <main className="container mx-auto px-6 py-8">
         <div className="flex gap-8">
           {/* Main Content */}
@@ -167,7 +210,7 @@ export default function CandidateDashboard() {
                 className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                 onClick={() =>
                   setTimeout(() => {
-                    navigate("/video-call");
+                    navigate("/video-call/candidate");
                   }, 1)
                 }
               >
@@ -184,8 +227,8 @@ export default function CandidateDashboard() {
                     key={tab.id}
                     onClick={() => {
                       setActiveTab(tab.id);
-                      if(activeTab === "my-interviews") {
-                        fetchInterviewData()
+                      if (activeTab === "my-interviews") {
+                        fetchInterviewData();
                       }
                     }}
                     className={`pb-4 relative ${
@@ -237,7 +280,7 @@ export default function CandidateDashboard() {
                           </div>
                           <div>
                             <a
-                              href="/video-call"
+                              href="/video-call/candidate"
                               className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-700 transition duration-300"
                             >
                               Start Interview
@@ -298,7 +341,11 @@ export default function CandidateDashboard() {
                       <p className="text-gray-600 text-sm mb-4">
                         {post.description}
                       </p>
-                      <a href="#" className="text-blue-600 hover:text-blue-700">
+                      <a
+                        href={post.readMore}
+                        target="blank"
+                        className="text-blue-600 hover:text-blue-700"
+                      >
                         Read more
                       </a>
                     </div>
@@ -358,7 +405,7 @@ export default function CandidateDashboard() {
                 <div className="flex gap-4">
                   <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
                     <img
-                      src="/placeholder.svg?height=40&width=40"
+                      src="https://d31kzl7c7thvlu.cloudfront.net/ghost/2022/09/Account-Manager.jpg"
                       alt="Resume icon"
                       className="w-10 h-10"
                     />

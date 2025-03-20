@@ -52,6 +52,31 @@ router.post('/candidate', async (req, res) => {
   }
 })
 
+router.post('/interviewer-candidate', async (req, res) => {
+  try {
+    const { interviewer, candidate } = req.body
+    if (!interviewer || !candidate) {
+      return res.status(400).json({ message: "Req body is required." })
+    }
+
+    const interviewerData = await InterviewModel.findOne({
+      $and: [
+        { "interviewer.email": interviewer.email },
+        { "candidate.email": candidate.email }
+      ]
+    });
+
+    if (!interviewerData || interviewerData.length === 0) {
+      return res.status(404).json({ message: "No interviewer data found for the given email." });
+    }
+
+    res.status(200).json(interviewerData);
+  } catch (error) {
+    console.error("Error fetching interviewer data:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+})
+
 router.post('/interviewer', async (req, res) => {
   try {
     const { email } = req.body
@@ -59,12 +84,12 @@ router.post('/interviewer', async (req, res) => {
       return res.status(400).json({ message: "Email is required in req body." })
     }
 
-    const interviewerData = await InterviewModel.find({ "interviewer.email": email });
-    if (!interviewerData || interviewerData.length === 0) {
+    const candidateData = await InterviewModel.find({ "interviewer.email": email });
+    if (!candidateData || candidateData.length === 0) {
       return res.status(404).json({ message: "No interviewer data found for the given email." });
     }
 
-    res.status(200).json(interviewerData);
+    res.status(200).json(candidateData);
   } catch (error) {
     console.error("Error fetching interviewer data:", error);
     res.status(500).json({ message: "Internal server error." });

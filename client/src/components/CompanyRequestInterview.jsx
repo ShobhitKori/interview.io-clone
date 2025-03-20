@@ -37,14 +37,18 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { stringify } from "postcss";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const CompanyRequestInterview = () => {
   const navigate = useNavigate();
   const logOut = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/");
+    toast.success("Logged out");
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
   };
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [activeTab, setActiveTab] = useState("roles");
@@ -204,7 +208,7 @@ const CompanyRequestInterview = () => {
     const finalizeCandidateAddition = async () => {
       console.log("FORM DATA", formData);
       try {
-        const response = await fetch("http://localhost:5000/interview", {
+        const response = await fetch("http://localhost:5000/interviews", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1091,11 +1095,13 @@ const CompanyRequestInterview = () => {
         variant="ghost"
         size="sm"
         onClick={() => logOut()}
-        className="absolute top-4 right-4 gap-2 text-muted-foreground hover:text-foreground"
+        className="absolute top-4 right-4 gap-2 text-muted-foreground hover:text-white hover:bg-black"
       >
         <LogOut className="h-4 w-4" />
         <span>Logout</span>
       </Button>
+
+      <ToastContainer />
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">

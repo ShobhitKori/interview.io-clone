@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { MicOff, VideoOff } from "lucide-react";
 import io from "socket.io-client";
 import Editor from "../components/Editor";
-import VideoCall from "../components/VideoCall";
+import VideoCall from "./VideoCall";
 import LanguageSelector from "../components/LanguageSelector";
 import OutputPanel from "../components/OutputPanel";
 import { languages } from "../utils/languages";
@@ -18,11 +19,12 @@ const Room = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const username = location.state?.username || "John Doe";
+  const interviewerEmail = location.state?.email;
 
   const [peerId, setPeerId] = useState("");
   const [remoteUsers, setRemoteUsers] = useState([]);
-  const [code, setCode] = useState("// Start coding here...");
   const [language, setLanguage] = useState(languages[0]);
+  const [code, setCode] = useState(languages[0].defaultCode)
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -33,6 +35,9 @@ const Room = () => {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+
+  const [isRemoteMuted, setIsRemoteMuted] = useState(false);
+  const [isRemoteVideoOff, setIsRemoteVideoOff] = useState(false);
 
   const socket = useSocket();
 
@@ -50,12 +55,12 @@ const Room = () => {
       video: true,
     });
     const offer = await peer.getOffer();
-    socket.emit("user:call", { to: remoteSocketId, offer });
+    socket.emit("user:call", { to: remoteSocketId, offer: offer });
     setMyStream(stream);
   }, [remoteSocketId, socket]);
 
   const handleIncomingCall = useCallback(
-    async (from, offer) => {
+    async ({ from, offer }) => {
       setRemoteSocketId(from);
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -63,8 +68,9 @@ const Room = () => {
       });
       setMyStream(stream);
       console.log(`Incoming Call from`, from, ` Offer: `, offer);
+
       const ans = await peer.getAnswer(offer);
-      socket.emit("call:accepted", { to: from, ans });
+      socket.emit("call:accepted", { to: from, ans: ans });
     },
     [socket]
   );
@@ -79,26 +85,28 @@ const Room = () => {
     async ({ from, ans }) => {
       console.log(`Call accepted by: ${from}, Answer received:`, ans);
       await peer.setLocalDescription(ans);
-      sendStreams();
+      setTimeout(() => {
+        sendStreams()
+      }, 500)
     },
     [sendStreams]
   );
 
   const handleNegoNeeded = useCallback(async () => {
     const offer = await peer.getOffer();
-    socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
+    socket.emit("peer:nego:needed", { offer: offer, to: remoteSocketId });
   }, [remoteSocketId, socket]);
 
   const handleNegoNeedIncoming = useCallback(
     async ({ from, offer }) => {
       const ans = await peer.getAnswer(offer);
-      socket.emit("peer:nego:done", { to: from, ans });
+      socket.emit("peer:nego:done", { to: from, ans: ans });
     },
     [socket]
   );
 
   const handleNegoFinal = useCallback(async ({ ans }) => {
-    await peer.setLocalDescription(ans);
+    await peer.setLocalDescription(JSON.stringify(ans));
   }, []);
 
   useEffect(() => {
@@ -108,6 +116,15 @@ const Room = () => {
     };
   }, [handleNegoNeeded]);
 
+  useEffect(() => {
+    peer.peer.addEventListener("track", async (ev) => {
+      const remoteStream = ev.streams;
+      console.log("Received remote track:", ev.streams);
+      if (remoteStream && remoteStream[0]) {
+        setRemoteStream(remoteStream[0]); // Fix the way we set remote stream
+      }
+    });
+  }, []);
   // Toggle audio
   const toggleAudio = useCallback(() => {
     if (myStream) {
@@ -129,15 +146,6 @@ const Room = () => {
   }, [myStream, isVideoOff]);
 
   useEffect(() => {
-    peer.peer.addEventListener("track", async (ev) => {
-      console.log("Received remote track:", ev.streams);
-      if (ev.streams && ev.streams[0]) {
-        setRemoteStream(ev.streams[0]); // Fix the way we set remote stream
-      }
-    });
-  }, []);
-
-  useEffect(() => {
     socket.on("user:joined", handleUserJoined);
     socket.on("incoming:call", handleIncomingCall);
     socket.on("call:accepted", handleCallAccepted);
@@ -155,24 +163,6 @@ const Room = () => {
       socket.off("peer:nego:final", handleNegoFinal);
       socket.off("room:latestCode");
     };
-    // Initialize PeerJS
-    // const newPeer = new Peer(undefined, {
-    //   host: "localhost",
-    //   port: 5173,
-    //   path: "/peerjs",
-    // });
-
-    // newPeer.on("open", (id) => {
-    //   setPeerId(id);
-    //   newSocket.emit("join-room", roomId, id, username);
-    // });
-
-    // setPeer(newPeer);
-
-    // return () => {
-    //   newSocket.disconnect();
-    //   newPeer.destroy();
-    // };
   }, [
     socket,
     handleUserJoined,
@@ -245,6 +235,7 @@ const Room = () => {
   const handleLanguageChange = (newLanguage) => {
     setLanguage(newLanguage);
     socket?.emit("language-change", { roomid, language: newLanguage });
+    setCode(newLanguage.defaultCode); // Set code to the default code of the selected language
   };
 
   const runCode = () => {
@@ -261,7 +252,7 @@ const Room = () => {
   const leaveRoom = () => {
     navigate("/");
   };
-  
+
   const user = localStorage.getItem("user");
   const parsedUser = JSON.parse(user);
 
@@ -270,7 +261,14 @@ const Room = () => {
       {/* Header */}
       <header className="flex items-center justify-between p-4 bg-black border-b border-gray-700">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold text-white">Intervue.io</h1>
+          <div
+          className="h-8 w-32 mb-4 bg-no-repeat bg-contain mt-3 ml-2"
+          style={{
+            backgroundImage:
+              "url(https://uploads-ssl.webflow.com/608e9cc36cbcc089f0998643/648175fc7332de3fb931061a_intervue.svg)",
+          }}
+          aria-label="Intervue"
+        />
           <div className="flex items-center px-3 py-1 space-x-2 bg-[#343a40] rounded-md">
             <span className="text-sm text-gray-300">Room:</span>
             <span className="text-sm font-medium text-white">{roomid}</span>
@@ -307,18 +305,15 @@ const Room = () => {
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-300">
-            {remoteSocketId ? "Connected" : `No one else is here`}
-          </span>
           <button
             onClick={() => {
               leaveRoom();
-              if (parsedUser.role === "interviewer") {
+              if (interviewerEmail) {
                 setTimeout(() => {
                   navigate("/candidate-report");
                 }, 1);
               } else {
-                navigate('/profile/candidate')
+                navigate("/profile/candidate");
               }
             }}
             className="px-3 py-1 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
@@ -350,92 +345,100 @@ const Room = () => {
                   onClick={sendStreams}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                 >
-                  Share Video
+                  Send Stream
                 </button>
               )}
             </div>
 
             {/* My Stream */}
             {myStream && (
-              <div className="relative rounded-lg overflow-hidden shadow-lg bg-black">
-                <div className="aspect-video">
-                  <ReactPlayer
-                    playing
-                    muted
-                    width="100%"
-                    height="100%"
-                    url={myStream}
-                    className="absolute top-0 left-0"
-                  />
-                </div>
-                <div className="absolute bottom-2 left-2 px-2 py-1 text-xs font-medium text-white bg-black bg-opacity-50 rounded">
-                  You ({username})
-                </div>
+              <div>
+                <p>My stream</p>
+                <div className="relative rounded-lg overflow-hidden shadow-lg bg-black">
+                  <div className="aspect-video">
+                    <ReactPlayer
+                      playing
+                      muted
+                      width="100%"
+                      height="100%"
+                      url={myStream}
+                      className="absolute top-0 left-0"
+                    />
+                  </div>
+                  <div className="absolute bottom-2 left-2 px-2 py-1 text-xs font-medium text-white bg-black bg-opacity-50 rounded">
+                    You ({username})
+                  </div>
 
-                {/* Video Controls */}
-                <div className="absolute bottom-2 right-2 flex space-x-2">
-                  <button
-                    onClick={toggleAudio}
-                    className={`p-2 rounded-full ${
-                      isMuted ? "bg-red-600" : "bg-gray-700"
-                    }`}
-                    title={isMuted ? "Unmute" : "Mute"}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  {/* Video Controls */}
+                  <div className="absolute bottom-2 right-2 flex space-x-2">
+                    <button
+                      onClick={toggleAudio}
+                      className={`p-2 rounded-full ${
+                        isMuted ? "bg-red-600" : "bg-gray-700"
+                      }`}
+                      title={isMuted ? "Unmute" : "Mute"}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={toggleVideo}
-                    className={`p-2 rounded-full ${
-                      isVideoOff ? "bg-red-600" : "bg-gray-700"
-                    }`}
-                    title={isVideoOff ? "Turn on camera" : "Turn off camera"}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={toggleVideo}
+                      className={`p-2 rounded-full ${
+                        isVideoOff ? "bg-red-600" : "bg-gray-700"
+                      }`}
+                      title={isVideoOff ? "Turn on camera" : "Turn off camera"}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Remote Stream */}
             {remoteStream && (
-              <div className="relative rounded-lg overflow-hidden shadow-lg bg-black mt-4">
-                <div className="aspect-video">
-                  <ReactPlayer
-                    playing
-                    width="100%"
-                    height="100%"
-                    url={remoteStream}
-                    className="absolute top-0 left-0"
-                  />
-                </div>
-                <div className="absolute bottom-2 left-2 px-2 py-1 text-xs font-medium text-white bg-black bg-opacity-50 rounded">
-                  Remote User
+              <div>
+                <p>Remote Stream</p>
+                <div className="relative rounded-lg overflow-hidden shadow-lg bg-black mt-4">
+                  <div className="aspect-video">
+                    <ReactPlayer
+                      playing
+                      muted
+                      width="100%"
+                      height="100%"
+                      url={remoteStream}
+                      className="absolute top-0 left-0"
+                    />
+                  </div>
+                  <div className="absolute bottom-2 left-2 px-2 py-1 text-xs font-medium text-white bg-black bg-opacity-50 rounded">
+                    Remote User
+                  </div>
+                  
                 </div>
               </div>
             )}
@@ -491,39 +494,3 @@ const Room = () => {
 };
 
 export default Room;
-
-// <div className="flex flex-col flex-1 overflow-hidden">
-//           {/* Editor Controls */}
-//           <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
-//             <LanguageSelector
-//               language={language}
-//               languages={languages}
-//               onChange={handleLanguageChange}
-//             />
-//             <button
-//               onClick={runCode}
-//               disabled={isRunning}
-//               className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-//                 isRunning
-//                   ? "bg-gray-600 cursor-not-allowed"
-//                   : "bg-green-600 hover:bg-green-700"
-//               }`}
-//             >
-//               {isRunning ? "Running..." : "Run Code"}
-//             </button>
-//           </div>
-
-//           {/* Editor and Output */}
-//           <div className="flex flex-1 overflow-hidden">
-//             <div className="w-2/3 overflow-hidden border-r border-gray-700">
-//               <Editor
-//                 code={code}
-//                 language={language.value}
-//                 onChange={handleCodeChange}
-//               />
-//             </div>
-//             <div className="w-1/3 overflow-hidden">
-//               <OutputPanel output={output} isRunning={isRunning} />
-//             </div>
-//           </div>
-//         </div>

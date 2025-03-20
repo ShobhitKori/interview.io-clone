@@ -1,6 +1,6 @@
 const AccessAccount = () => {
   return (
-    <div className="container mx-auto px-4 py-12 pt-[120px]">
+    <div className="container mx-auto px-4 py-12 pt-60">
       <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-200">
         {/* Interviewer Card */}
         <div className="flex flex-col items-center text-center px-8">

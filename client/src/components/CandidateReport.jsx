@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StarRating from "./StarRating";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const company = localStorage.getItem("company");
-const parsedCompany = JSON.parse(company);
+const company = JSON.parse(localStorage.getItem("company"));
 
-const candidate = localStorage.getItem("candidate");
-const parsedCandidate = JSON.parse(candidate);
+const candidate = JSON.parse(localStorage.getItem("candidate"));
+
+const interviewer = JSON.parse(localStorage.getItem("interviewer"));
 
 const CandidateReport = () => {
   const [formData, setFormData] = useState({
@@ -24,12 +26,16 @@ const CandidateReport = () => {
     finalSuggestion: "",
     feedback: "",
     business: {
-      name: parsedCompany.name,
-      email: parsedCompany.email,
+      name: company.name,
+      email: company.email,
     },
     candidate: {
-      name: parsedCandidate.name,
-      email: parsedCandidate.email,
+      name: candidate.name,
+      email: candidate.email,
+    },
+    interviewer: {
+      name: interviewer.name,
+      email: interviewer.email,
     },
   });
 
@@ -41,11 +47,6 @@ const CandidateReport = () => {
       setFormData(JSON.parse(savedData));
     }
   }, []);
-
-  // Save data to localStorage whenever formData changes
-  // useEffect(() => {
-  //   localStorage.setItem("candidateReport", JSON.stringify(formData));
-  // }, [formData]);
 
   const handleRatingChange = (category, value) => {
     setFormData((prev) => ({
@@ -78,15 +79,47 @@ const CandidateReport = () => {
     });
   };
 
-  const submitReport = async () => {
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isFormValid, setIsFormValid] = useState(true);
+
+  const submitReport = async (event) => {
     console.log("FORM DATA", formData);
+    event.preventDefault();
+    // Validation
+    let isValid = true;
+    let errorMessage = "";
+
+    // Check star ratings (assuming all are required)
+    const ratingKeys = Object.keys(formData).filter(
+      (key) =>
+        !["feedback", "business", "candidate", "finalSuggestion"].includes(key)
+    );
+    for (const key of ratingKeys) {
+      if (!formData[key] || formData[key] === 0) {
+        isValid = false;
+        errorMessage = "Please provide ratings for all performance. ";
+        break;
+      }
+    }
+    // Check finalSuggestion
+    if (!formData.finalSuggestion) {
+      isValid = false;
+      errorMessage += "Please select a final suggestion.";
+    }
+    setIsFormValid(isValid);
+
+    if (!isValid) {
+      setErrorMessage(errorMessage); // error display
+      return; // Prevent submission
+    }
+    setErrorMessage("");
     try {
       const response = await fetch("http://localhost:5000/report/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData), // Send the entire formData object
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -99,9 +132,11 @@ const CandidateReport = () => {
     } catch (error) {
       console.error("Error adding data:", error);
     }
-    // setTimeout(() => {
+    toast.success("Report submitted Successfully");
+    setTimeout(() => {
+
       navigate("/profile/interviewer");
-    // }, 1000);
+    }, 2000);
   };
 
   return (
@@ -112,8 +147,9 @@ const CandidateReport = () => {
             Candidate Performance Report
           </h1>
         </div>
-
+        <ToastContainer />
         <form onSubmit={submitReport} className="px-6 py-4 space-y-6">
+          {errorMessage && <div className="text-red-500">{errorMessage}</div>}
           <div className="space-y-4">
             <h2 className="text-lg font-medium text-gray-700">
               Performance Ratings
@@ -122,7 +158,13 @@ const CandidateReport = () => {
             <div className="grid gap-4 md:grid-cols-2">
               {Object.entries(formData)
                 .filter(
-                  ([key]) => !["finalSuggestion", "feedback"].includes(key)
+                  ([key]) =>
+                    ![
+                      "finalSuggestion",
+                      "feedback",
+                      "business",
+                      "candidate",
+                    ].includes(key)
                 )
                 .map(([key, value]) => (
                   <div

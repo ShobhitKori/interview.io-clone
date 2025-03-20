@@ -65,7 +65,7 @@ function CandidateLoginPage() {
       }
       const result = await response.json();
       localStorage.setItem("token", result.token);
-      localStorage.setItem("user", JSON.stringify(result.user));
+      localStorage.setItem("candidate", JSON.stringify(result.user));
       console.log(result);
       if (result.token) 
         navigate("/profile/candidate");

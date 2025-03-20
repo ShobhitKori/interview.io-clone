@@ -18,6 +18,7 @@ import InterviewerLoginPage from "./components/InterviewerLogin ";
 import InterviewerDashboard from "./components/InterviewerDashboard";
 import CandidateReport from "./components/CandidateReport";
 import NotFound from "./components/NotFound";
+import VideoCallCandidate from "./components/VideoCallCandidate";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -32,6 +33,7 @@ const router = createBrowserRouter([
   { path: "/profile/candidate", element: <CandidateDashboard /> },
   { path: "/profile/interviewer", element: <InterviewerDashboard /> },
   { path: "/video-call", element: <VideoCall /> },
+  { path: "/video-call/candidate", element: <VideoCallCandidate /> },
   { path: "/room/:roomid", element: <Room /> },
   { path: "/candidate-report", element: <CandidateReport /> },
   { path: "/*", element: <NotFound /> },

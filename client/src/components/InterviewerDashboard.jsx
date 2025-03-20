@@ -13,18 +13,21 @@ import {
   LogOut,
   ChevronDown,
 } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Header = ({ user }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const logOut = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("company");
-    localStorage.removeItem("candidate");
+    toast.success("Logged out")
     setTimeout(() => {
       navigate("/");
+      localStorage.removeItem("token");
+      localStorage.removeItem("interviewer");
+      localStorage.removeItem("company");
+      localStorage.removeItem("candidate");
     }, 2000);
   };
   const handleToggle = () => {
@@ -55,7 +58,7 @@ const Header = ({ user }) => {
           <ChevronDown size={20} className="mr-3" />
 
           {isOpen && (
-            <div className="absolute top-full right-0 mt-2 bg-[#0a0908] rounded-md shadow-lg p-2 w-48">
+            <div className="absolute top-full z-10 right-0 mt-2 bg-[#0a0908] rounded-md shadow-lg p-2 w-48">
               <button
                 className="flex items-center w-full p-2 hover:[#343a40] rounded-md"
                 onClick={logOut}
@@ -66,6 +69,7 @@ const Header = ({ user }) => {
             </div>
           )}
         </div>
+        <ToastContainer />
       </div>
     </header>
   );
@@ -239,7 +243,7 @@ const TabNavigation = ({ activeTab, setActiveTab, tabs }) => {
 };
 
 const UpcomingInterviews = ({ activeTab }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("interviewer"));
   const interviewerDetails = {
     name: user.name,
     email: user.email,
@@ -272,10 +276,9 @@ const UpcomingInterviews = ({ activeTab }) => {
       fetchInterviewData();
     }
   }, [activeTab]);
-  const parsedInterviewData = JSON.stringify(interviewData)
-  
+
   const upcomingInterviews = interviewData.map((interview, index) => ({
-    id: index, 
+    id: index,
     candidate: interview.candidate.name,
     candidateEmail: interview.candidate.email,
     business: interview.business,
@@ -285,9 +288,9 @@ const UpcomingInterviews = ({ activeTab }) => {
       parseInt(interview.interviewSchedule.time.split(":")[0]) +
       interview.interviewSchedule.duration / 60
     }:${interview.interviewSchedule.time.split(":")[1]}`, // create a time range
-    type: "Video Call", 
-    feedback: "Not Submitted", 
-    result: "Pending", 
+    type: "Video Call",
+    feedback: "Not Submitted",
+    result: "Pending",
   }));
 
   // Mock data for completed interviews
@@ -337,6 +340,7 @@ const UpcomingInterviews = ({ activeTab }) => {
   ];
 
   const renderContent = () => {
+    const navigate = useNavigate();
     if (activeTab === "upcoming") {
       if (upcomingInterviews.length === 0) {
         return (
@@ -394,11 +398,20 @@ const UpcomingInterviews = ({ activeTab }) => {
                 <button
                   className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   onClick={() => {
-                    localStorage.setItem("company", JSON.stringify(interview.business))
-                    localStorage.setItem("candidate", JSON.stringify({name: interview.candidate, email: interview.candidateEmail}))
+                    localStorage.setItem(
+                      "company",
+                      JSON.stringify(interview.business)
+                    );
+                    localStorage.setItem(
+                      "candidate",
+                      JSON.stringify({
+                        name: interview.candidate,
+                        email: interview.candidateEmail,
+                      })
+                    );
                     setTimeout(() => {
-                      navigate("/video-call")
-                    }, 2000)
+                      navigate("/video-call");
+                    }, 2000);
                   }}
                 >
                   Start Interview
@@ -518,7 +531,7 @@ const UpcomingInterviews = ({ activeTab }) => {
 
 export default function InterviewerDashboard() {
   const [activeTab, setActiveTab] = useState("upcoming");
-  const userProfile = JSON.parse(localStorage.getItem("user"));
+  const userProfile = JSON.parse(localStorage.getItem("interviewer"));
   const interviewer = {
     name: userProfile.name,
     role: "Senior Technical Interviewer",
@@ -536,8 +549,8 @@ export default function InterviewerDashboard() {
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               tabs={[
-                { id: "upcoming", label: "Upcoming" },
                 { id: "completed", label: "Completed" },
+                { id: "upcoming", label: "Upcoming" },
                 { id: "feedback", label: "My Feedback" },
               ]}
             />

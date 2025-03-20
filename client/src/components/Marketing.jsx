@@ -10,7 +10,7 @@ const companies = [
 
 const Marketing = () => {
   return (
-    <section className="py-12 bg-white">
+    <section className="py-12 bg-customGreen">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <p className="font-bold text-center text-gray-900 mb-8">
           Visionaries Grow with Intervue

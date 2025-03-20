@@ -1,28 +1,29 @@
-import './index.css'
-import Navbar from './components/InterviewNavbar.jsx'
-import Selector from './components/InterviewSelector.jsx'
-import ProfileSelector from './components/ProfileSelector.jsx'
-import Marketing from './components/Marketing.jsx'
-import HowItWorks from './components/HowItWorks.jsx'
-import CompanyTypeSection from './components/CompanyTypesection.jsx'
-import SolutionSection from './components/SolutionSection.jsx'
-import FAQSection from './components/FAQSection.jsx'
-import Footer from './components/Footer.jsx'
+import "./index.css";
+import Navbar from "./components/InterviewNavbar.jsx";
+import Selector from "./components/InterviewSelector.jsx";
+import ProfileSelector from "./components/ProfileSelector.jsx";
+import Marketing from "./components/Marketing.jsx";
+import HowItWorks from "./components/HowItWorks.jsx";
+import CompanyTypeSection from "./components/CompanyTypesection.jsx";
+import SolutionSection from "./components/SolutionSection.jsx";
+import FAQSection from "./components/FAQSection.jsx";
+import Footer from "./components/Footer.jsx";
 
 function Home() {
   return (
     <div>
       <Navbar></Navbar>
       <br></br>
-      <div className='pt-[120px]'>
+      <div className="pt-40">
         <Selector></Selector>
       </div>
       <br></br>
       <ProfileSelector></ProfileSelector>
       <br></br>
-      <Marketing></Marketing>
+      <div>
+        <Marketing></Marketing>
+      </div>
       <br></br>
-      <HowItWorks></HowItWorks>
       <br></br>
       <CompanyTypeSection></CompanyTypeSection>
       <br></br>
